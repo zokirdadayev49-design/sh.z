@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroTech 3D - Kelajak Jihozlari Marketplace</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Three.js for 3D graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        neonCyan: '#00f3ff',
+                        neonPurple: '#a855f7',
+                        neonPink: '#ff007f',
+                        darkBg: '#090d16',
+                        cardBg: 'rgba(255, 255, 255, 0.03)',
+                    },
+                    boxShadow: {
+                        'glow-cyan': '0 0 25px rgba(0, 243, 255, 0.5)',
+                        'glow-purple': '0 0 25px rgba(168, 85, 247, 0.5)',
+                        'glow-pink': '0 0 25px rgba(255, 0, 127, 0.5)',
+                        '3d-btn': '0 10px 0 #0099ab, 0 15px 25px rgba(0,243,255,0.4)',
+                        '3d-purple': '0 10px 0 #6b21a8, 0 15px 25px rgba(168,85,247,0.4)',
+                        '3d-pink': '0 10px 0 #be123c, 0 15px 25px rgba(255,0,127,0.4)',
+                        '3d-amber': '0 10px 0 #b45309, 0 15px 25px rgba(245,158,11,0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #060911;
+            color: #f3f4f6;
+            overflow-x: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Glassmorphism card effects */
+        .glass-card {
+            background: rgba(18, 24, 38, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-nav {
+            background: rgba(6, 9, 17, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 3D Button Push Effect */
+        .btn-3d {
+            transition: all 0.15s ease-in-out;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .btn-3d:active {
+            transform: translateY(6px);
+            box-shadow: 0 4px 0 currentColor, 0 5px 10px rgba(0,0,0,0.3) !important;
+        }
+
+        /* Ambient neon glow text */
+        .text-glow {
+            text-shadow: 0 0 15px currentColor;
+        }
+
+        /* Animated gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #00f3ff 0%, #a855f7 50%, #ff007f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #060911;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f3ff;
+        }
+
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-neonCyan selection:text-black">
+
+    <div id="webgl-container"></div>
+
+    <!-- Navigation Header -->
+    <header class="fixed top-0 left-0 w-full z-50 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-glow-cyan">
+                    <i class="fa-solid fa-microchip text-xl animate-pulse"></i>
+                </div>
+                <span class="text-2xl font-extrabold tracking-wider gradient-text">Electro3D</span>
+            </div>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-gray-300">
+                <a href="#hero" class="hover:text-neonCyan transition">Bosh sahifa</a>
+                <a href="#links-section" class="hover:text-neonCyan transition">3D Tugmalar</a>
+                <a href="#products" class="hover:text-neonCyan transition">Mahsulotlar</a>
+                <a href="#about" class="hover:text-neonCyan transition">Korxona</a>
+            </nav>
+
+            <!-- Quick Action Links -->
+            <div class="flex items-center space-x-4">
+                <button onclick="openAdminModal()" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-black transition duration-300 flex items-center gap-2">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Admin Panel</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Wrapper -->
+    <main class="relative z-10 pt-24">
+
+        <!-- HERO SECTION -->
+        <section id="hero" class="relative min-h-[85vh] flex items-center justify-center px-4 overflow-hidden">
+            <div class="max-w-5xl mx-auto text-center z-10 my-12">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border-neonCyan/30 text-neonCyan text-xs font-semibold mb-6 animate-bounce">
+                    <span class="w-2 h-2 rounded-full bg-neonCyan animate-ping"></span>
+                    <span>3D Texnologiyalar asosida yaratilgan interaktiv do'kon</span>
+                </div>
+                
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-black text-white leading-tight mb-6 tracking-tight">
+                    Kelajak Electronics <br>
+                    <span class="gradient-text">3D Olamiga Xush Kelibsiz!</span>
+                </h1>
+
+                <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+                    Yuqori sifatli elektronika, zamonaviy dizayn va interaktiv tajriba. Quyidagi 3D platformamiz orqali korxona bilan tanishing, video lavhani tomosha qiling va buyurtma bering.
+                </p>
+
+                <div class="flex flex-wrap justify-center gap-6">
+                    <a href="#links-section" class="px-8 py-4 rounded-xl bg-cyan-400 text-slate-950 font-bold tracking-wide shadow-3d-btn btn-3d hover:bg-cyan-300 transition-all flex items-center gap-3">
+                        <i class="fa-solid fa-cubes text-lg"></i>
+                        <span>3D Havolalar Bo'limi</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN 3D BUTTONS / LINKS SECTION -->
+        <section id="links-section" class="py-20 px-4 max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-3">
+                    Interaktiv <span class="text-neonCyan">3D Havolalar</span>
+                </h2>
+                <p class="text-gray-400 max-w-md mx-auto text-sm">
+                    Quyidagi 3d ko'rinishdagi tugmalar orqali tegishli hujjat va formalarga o'ting
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                
+                <!-- CARD 1: Korxona Rezumesi -->
+                <div class="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-neonCyan/50 transition-all duration-300 transform hover:-translate-y-2 group">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-neonCyan mb-6 group-hover:scale-110 transition duration-300 shadow-glow-cyan">
+                            <i class="fa-solid fa-file-contract text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Korxona Rezumesi</h3>
+                        <p class="text-gray-400 text-xs mb-6 leading-relaxed">
+                            Kompaniyamizning faoliyati, xizmatlari va rivojlanish tarixi bilan Google Docs hujjatimizda atroflicha tanishing.
+                        </p>
+                    </div>
+
+                    <a href="https://docs.google.com/document/d/1lwQz8amfYZlxUZxrqr4xXsQmbq29ywWWVb9IvgHwjvk/edit?usp=sharing" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="w-full py-3 px-4 rounded-xl bg-neonCyan text-slate-950 font-bold text-center shadow-3d-btn btn-3d hover:bg-cyan-300 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <span>Rezumeni Ko'rish</span>
+                    </a>
+                </div>
+
+                <!-- CARD 2: Buyurtma Berish -->
+                <div class="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-neonPurple/50 transition-all duration-300 transform hover:-translate-y-2 group">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-neonPurple mb-6 group-hover:scale-110 transition duration-300 shadow-glow-purple">
+                            <i class="fa-solid fa-cart-shopping text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Buyurtma Berish</h3>
+                        <p class="text-gray-400 text-xs mb-6 leading-relaxed">
+                            O'zingizga ma'qul kelgan elektronika jihozlarini tezkor sotib olish uchun buyurtma formasini to'ldiring.
+                        </p>
+                    </div>
+
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSe_cgoCgHZltmTCqd45EeZfXXYGsLWQLJyE3JDEp3NeYIiq7g/viewform?usp=sharing&ouid=118208809262897469234" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="w-full py-3 px-4 rounded-xl bg-neonPurple text-white font-bold text-center shadow-3d-purple btn-3d hover:bg-purple-500 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Buyurtma Berish</span>
+                    </a>
+                </div>
+
+                <!-- CARD 3: Video Lavha -->
+                <div class="glass-card rounded-2xl p-6 flex flex-col justify-between hover:border-neonPink/50 transition-all duration-300 transform hover:-translate-y-2 group">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-neonPink mb-6 group-hover:scale-110 transition duration-300 shadow-glow-pink">
+                            <i class="fa-solid fa-circle-play text-2xl animate-pulse"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Video Lavha</h3>
+                        <p class="text-gray-400 text-xs mb-6 leading-relaxed">
+                            Mahsulotlarimiz va do'konimiz ish jarayoni aks etgan maxsus taqdimot videoni tomosha qiling.
+                        </p>
+                    </div>
+
+                    <a href="https://docs.google.com/videos/d/1luG3HrFENKRSsY8sM_ZuDx_J8eNjzOmE3CC4mIZwrJE/play?usp=sharing" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="w-full py-3 px-4 rounded-xl bg-neonPink text-white font-bold text-center shadow-3d-pink btn-3d hover:bg-pink-500 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Videoni Ko'rish</span>
+                    </a>
+                </div>
+
+                <!-- CARD 4: Buyurtmalar Jadvali (Admin Locked) -->
+                <div class="glass-card rounded-2xl p-6 flex flex-col justify-between border-amber-500/20 hover:border-amber-500/50 transition-all duration-300 transform hover:-translate-y-2 group">
+                    <div>
+                        <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6 group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-table text-2xl"></i>
+                        </div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-xl font-bold text-white">Buyurtmalar Jadvali</h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">ADMIN</span>
+                        </div>
+                        <p class="text-gray-400 text-xs mb-6 leading-relaxed">
+                            Kelgan barcha buyurtmalar jadvali (Google Spreadsheet). Ushbu havolaga kirish parol bilan himoyalangan.
+                        </p>
+                    </div>
+
+                    <button onclick="openAdminModal()" 
+                            class="w-full py-3 px-4 rounded-xl bg-amber-500 text-slate-950 font-bold text-center shadow-3d-amber btn-3d hover:bg-amber-400 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>Jadvalni Ochish</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FEATURED PRODUCTS SHOWCASE SECTION -->
+        <section id="products" class="py-20 px-4 max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+                <div>
+                    <span class="text-neonCyan font-semibold text-sm uppercase tracking-wider">Katalog</span>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-1">Ommabop Jihozlar</h2>
+                </div>
+                <p class="text-gray-400 text-sm max-w-md mt-2 md:mt-0">
+                    Sifat va innovatsiyani o'zida jamlagan zamonaviy gadjetlar to'plami
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Product 1 -->
+                <div class="glass-card rounded-2xl p-5 hover:border-cyan-500/40 transition duration-300">
+                    <div class="w-full h-48 rounded-xl bg-slate-900 overflow-hidden relative mb-4 flex items-center justify-center border border-white/5">
+                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80" alt="Headphones" class="w-full h-full object-cover transform hover:scale-110 transition duration-500">
+                        <span class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/80 text-black backdrop-blur-md">Yangilik</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1">CyberSound Pro 3D</h3>
+                    <p class="text-xs text-gray-400 mb-4">Shovqinni bekor qiluvchi simsiz quloqchin</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-neonCyan font-extrabold text-xl">$189.00</span>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSe_cgoCgHZltmTCqd45EeZfXXYGsLWQLJyE3JDEp3NeYIiq7g/viewform?usp=sharing&ouid=118208809262897469234" target="_blank" class="p-3 rounded-xl bg-neonCyan/10 text-neonCyan hover:bg-neonCyan hover:text-black transition">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div class="glass-card rounded-2xl p-5 hover:border-purple-500/40 transition duration-300">
+                    <div class="w-full h-48 rounded-xl bg-slate-900 overflow-hidden relative mb-4 flex items-center justify-center border border-white/5">
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80" alt="Smartwatch" class="w-full h-full object-cover transform hover:scale-110 transition duration-500">
+                        <span class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/80 text-white backdrop-blur-md">Top sotuv</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1">NeoVision Smartwatch</h3>
+                    <p class="text-xs text-gray-400 mb-4">AMOLED displey va bio-sensorlar</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-neonPurple font-extrabold text-xl">$249.00</span>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSe_cgoCgHZltmTCqd45EeZfXXYGsLWQLJyE3JDEp3NeYIiq7g/viewform?usp=sharing&ouid=118208809262897469234" target="_blank" class="p-3 rounded-xl bg-neonPurple/10 text-neonPurple hover:bg-neonPurple hover:text-white transition">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="glass-card rounded-2xl p-5 hover:border-pink-500/40 transition duration-300">
+                    <div class="w-full h-48 rounded-xl bg-slate-900 overflow-hidden relative mb-4 flex items-center justify-center border border-white/5">
+                        <img src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=600&q=80" alt="Laptop" class="w-full h-full object-cover transform hover:scale-110 transition duration-500">
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1">AeroBook Ultra X</h3>
+                    <p class="text-xs text-gray-400 mb-4">O'ta yupqa va kuchli grafik noutbuk</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-neonPink font-extrabold text-xl">$1,299.00</span>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSe_cgoCgHZltmTCqd45EeZfXXYGsLWQLJyE3JDEp3NeYIiq7g/viewform?usp=sharing&ouid=118208809262897469234" target="_blank" class="p-3 rounded-xl bg-neonPink/10 text-neonPink hover:bg-neonPink hover:text-white transition">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ADMIN PASSWORD MODAL -->
+    <div id="adminModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-card border border-amber-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl relative transform scale-95 transition-all duration-300" id="modalCard">
+            <!-- Close Button -->
+            <button onclick="closeAdminModal()" class="absolute top-5 right-5 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center mb-4 border border-amber-500/30">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-extrabold text-white">Admin Tasdiqlash</h3>
+                <p class="text-gray-400 text-xs mt-1">Buyurtmalar jadvalini ko'rish uchun maxfiy parolni kiriting</p>
+            </div>
+
+            <form onsubmit="handleAdminSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-2">Parol:</label>
+                    <div class="relative">
+                        <input type="password" id="adminPassword" placeholder="Parolni kiriting..." required 
+                               class="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition text-sm tracking-wider">
+                        <i class="fa-solid fa-key absolute right-4 top-3.5 text-gray-500 text-sm"></i>
+                    </div>
+                </div>
+
+                <!-- Error Message Alert -->
+                <div id="passwordError" class="hidden text-red-400 text-xs flex items-center gap-2 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Parol noto'g'ri! Iltimos qaytadan urinib ko'ring.</span>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-amber-500 text-slate-950 font-bold shadow-3d-amber btn-3d hover:bg-amber-400 transition-all flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-unlock"></i>
+                    <span>Jadvalni Ochish</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="glass-nav mt-20 border-t border-white/10 py-8 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 text-center sm:flex sm:justify-between sm:items-center">
+            <p class="text-gray-500 text-xs">&copy; 2026 ElectroTech 3D. Barcha huquqlar himoyalangan.</p>
+            <div class="flex justify-center space-x-6 mt-4 sm:mt-0 text-gray-400 text-sm">
+                <a href="https://docs.google.com/document/d/1lwQz8amfYZlxUZxrqr4xXsQmbq29ywWWVb9IvgHwjvk/edit?usp=sharing" target="_blank" class="hover:text-neonCyan transition">Rezume</a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSe_cgoCgHZltmTCqd45EeZfXXYGsLWQLJyE3JDEp3NeYIiq7g/viewform?usp=sharing&ouid=118208809262897469234" target="_blank" class="hover:text-neonCyan transition">Buyurtmalar</a>
+                <a href="#" onclick="openAdminModal(); return false;" class="hover:text-amber-400 transition">Admin</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC & THREE.JS CANVAS ANIMATION -->
+    <script>
+        let scene, camera, renderer, particles, torusMesh, sphereMesh;
+
+        function init3D() {
+            const container = document.getElementById('webgl-container');
+
+            // Scene setup
+            scene = new THREE.Scene();
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Add Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const pointLight1 = new THREE.PointLight(0x00f3ff, 2, 100);
+            pointLight1.position.set(20, 20, 20);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0xa855f7, 2, 100);
+            pointLight2.position.set(-20, -20, 20);
+            scene.add(pointLight2);
+
+            // 1. Create Glowing Particles Background
+            const particlesCount = 700;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 80;
+            }
+
+            const particlesGeometry = new THREE.BufferGeometry();
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.15,
+                color: 0x00f3ff,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+
+            // 2. Main Futuristic 3D Wireframe Torus Ring
+            const torusGeo = new THREE.TorusGeometry(8, 2.5, 16, 100);
+            const torusMat = new THREE.MeshStandardMaterial({
+                color: 0x00f3ff,
+                wireframe: true,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            torusMesh = new THREE.Mesh(torusGeo, torusMat);
+            torusMesh.position.set(15, 5, -10);
+            scene.add(torusMesh);
+
+            // 3. Floating Orb Sphere
+            const sphereGeo = new THREE.IcosahedronGeometry(5, 2);
+            const sphereMat = new THREE.MeshStandardMaterial({
+                color: 0xa855f7,
+                wireframe: true,
+                roughness: 0.1
+            });
+            sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            sphereMesh.position.set(-18, -8, -5);
+            scene.add(sphereMesh);
+
+            // Handle Window Resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Mouse Parallax Effect
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate 3D objects
+            if (particles) {
+                particles.rotation.y += 0.0005;
+                particles.rotation.x += 0.0002;
+            }
+
+            if (torusMesh) {
+                torusMesh.rotation.x += 0.005;
+                torusMesh.rotation.y += 0.008;
+            }
+
+            if (sphereMesh) {
+                sphereMesh.rotation.x -= 0.004;
+                sphereMesh.rotation.y -= 0.006;
+            }
+
+            // Camera subtle floating based on mouse
+            camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 10 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+
+        const TARGET_SHEET_URL = "https://docs.google.com/spreadsheets/d/1wbCnrbeGjxIU4IslwsGpV406e17ewALWlOhd_4rHIOk/edit?usp=sharing";
+
+        function openAdminModal() {
+            const modal = document.getElementById('adminModal');
+            const card = document.getElementById('modalCard');
+            const passwordInput = document.getElementById('adminPassword');
+            const errorMsg = document.getElementById('passwordError');
+
+            passwordInput.value = '';
+            errorMsg.classList.add('hidden');
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+            
+            setTimeout(() => passwordInput.focus(), 100);
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById('adminModal');
+            const card = document.getElementById('modalCard');
+
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function handleAdminSubmit(event) {
+            event.preventDefault();
+            const passwordInput = document.getElementById('adminPassword');
+            const errorMsg = document.getElementById('passwordError');
+
+            // Verification code: 123456
+            if (passwordInput.value === '123456') {
+                closeAdminModal();
+                // Redirect user to the Google Spreadsheet
+                window.open(TARGET_SHEET_URL, '_blank');
+            } else {
+                errorMsg.classList.remove('hidden');
+                passwordInput.classList.add('border-red-500');
+                setTimeout(() => {
+                    passwordInput.classList.remove('border-red-500');
+                }, 2000);
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAdminModal();
+        });
+
+        // Initialize on window load
+        window.onload = function() {
+            init3D();
+            animate();
+        };
+    </script>
+</body>
+</html>
